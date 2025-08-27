@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Iron Man Assistant Dashboard</title>
+<style>
+button { width: 120px; height: 40px; margin: 5px; }
+input { width: 200px; height: 30px; }
+img { border:2px solid black; max-width:100%; }
+</style>
+<script>
+function sendCommand(cmd,data=''){
+    fetch('/action',{
+        method:'POST',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:'command='+cmd+'&data='+data
+    });
+}
+</script>
+</head>
+<body>
+<h1>Iron Man Female Assistant</h1>
+
+<h3>Live Screen</h3>
+<img src="/screen" alt="PC Screen">
+
+<h3>Mouse</h3>
+<button onclick="sendCommand('move','0,-50')">Up</button><br>
+<button onclick="sendCommand('move','-50,0')">Left</button>
+<button onclick="sendCommand('move','50,0')">Right</button><br>
+<button onclick="sendCommand('move','0,50')">Down</button><br>
+<button onclick="sendCommand('click','left')">Left Click</button>
+<button onclick="sendCommand('click','right')">Right Click</button>
+
+<h3>Keyboard</h3>
+<input type="text" id="textInput" placeholder="Type here">
+<button onclick="sendCommand('type',document.getElementById('textInput').value)">Send</button>
+
+<h3>Open App / URL</h3>
+<input type="text" id="appInput" placeholder="App path or URL">
+<button onclick="sendCommand('open_app',document.getElementById('appInput').value)">Open App</button>
+<button onclick="sendCommand('open_url',document.getElementById('appInput').value)">Open URL</button>
+
+<h3>PC Speech</h3>
+<input type="text" id="speakInput" placeholder="Say this">
+<button onclick="sendCommand('speak',document.getElementById('speakInput').value)">Speak</button>
+
+<h3>Power</h3>
+<button onclick="sendCommand('shutdown')">Shutdown</button>
+<button onclick="sendCommand('restart')">Restart</button>
+
+<h3>Macros</h3>
+{% for key in macros %}
+<button onclick="sendCommand('macro','{{key}}')">{{key}}</button>
+{% endfor %}
+
+<h3>Media Control</h3>
+<button onclick="sendCommand('media','play')">Play/Pause</button>
+<button onclick="sendCommand('media','next')">Next</button>
+<button onclick="sendCommand('media','prev')">Previous</button>
+
+</body>
+</html>
