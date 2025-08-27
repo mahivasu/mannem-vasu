@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FitTrack – Fitness Web App</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg: #0b1020; /* deep navy */
+      --card: #151a2f; /* dark slate */
+      --muted: #8c95b2; /* slate gray */
+      --text: #e9ecf8; /* near-white */
+      --accent: #6ee7b7; /* mint */
+      --accent-2: #60a5fa; /* blue */
+      --danger: #f87171; /* red */
+      --ring: rgba(110, 231, 183, .35);
+    }
+    * { box-sizing: border-box }
+    html, body { height: 100% }
+    body{
+      margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 600px at 80% -10%, #142045 0%, transparent 60%), var(--bg);
+      color: var(--text);
+    }
+    a { color: var(--accent-2); text-decoration: none }
+    header{
+      position: sticky; top: 0; z-index: 10;
+      backdrop-filter: blur(8px);
+      background: linear-gradient(180deg, rgba(11,16,32,0.9), rgba(11,16,32,0.6));
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .container{ max-width:1100px; margin:0 auto; padding: 1rem 1.2rem }
+    .brand{ display:flex; align-items:center; gap:.6rem; font-weight:700; letter-spacing:.3px }
+    .brand .dot{ width:10px; height:10px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--accent-2)) }
+    nav{ display:flex; gap:1rem; flex-wrap: wrap }
+    nav a{ padding:.5rem .8rem; border-radius:999px; background: rgba(255,255,255,0.04); color:var(--text); font-weight:600; font-size:.9rem }
+    nav a:hover{ box-shadow:0 0 0 3px var(--ring) inset }
+
+    .grid{ display:grid; gap:1rem }
+    @media(min-width: 900px){ .grid{ grid-template-columns: 1.2fr 1fr } }
+
+    .card{ background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+      border:1px solid rgba(255,255,255,0.06);
+      border-radius: 18px; padding: 1rem; box-shadow: 0 4px 30px rgba(0,0,0,0.25) }
+    .card h2{ margin:.25rem 0 1rem; font-size:1.1rem }
+    .muted{ color: var(--muted); font-size:.92rem }
+    .row{ display:flex; gap:.8rem; flex-wrap:wrap }
+    input, select, button, textarea{ font: inherit }
+    input, select{
+      background:#0f152b; color:var(--text); border:1px solid rgba(255,255,255,0.08);
+      border-radius: 12px; padding:.7rem .8rem; width:100%
+    }
+    label{ font-weight:600; font-size:.88rem }
+    .btn{ border:0; border-radius: 12px; padding:.75rem 1rem; font-weight:700; cursor:pointer }
+    .btn.primary{ background: linear-gradient(135deg,var(--accent), var(--accent-2)); color:#0b1020 }
+    .btn.ghost{ background:transparent; border:1px solid rgba(255,255,255,0.12); color:var(--text) }
+    .btn.danger{ background:var(--danger); color:#1a0b0b }
+
+    .kpi{ display:grid; grid-template-columns: repeat(2,1fr); gap: .8rem }
+    .kpi .tile{ background:#0f152b; border:1px solid rgba(255,255,255,0.06); border-radius:16px; padding: .9rem }
+    .kpi .tile .value{ font-weight:800; font-size:1.4rem }
+
+    .progress{
+      height: 10px; border-radius: 999px; background: rgba(255,255,255,0.08); overflow:hidden
+    }
+    .progress > span{ display:block; height:100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); width:0% }
+
+    .list{ display:flex; flex-direction:column; gap:.6rem; max-height: 240px; overflow:auto; padding-right:.25rem }
+    .pill{ padding:.35rem .6rem; border-radius:999px; background:rgba(255,255,255,0.06) }
+    .item{ display:flex; align-items:center; justify-content:space-between; gap:.6rem; background:#0f152b; border:1px solid rgba(255,255,255,0.06); padding:.6rem .8rem; border-radius: 12px }
+    .item input[type="checkbox"]{ width:18px; height:18px }
+    .small{ font-size:.82rem }
+
+    .footer{ text-align:center; color:var(--muted); padding: 2rem 0 }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container" style="display:flex; align-items:center; justify-content:space-between; gap:1rem">
+      <div class="brand"><span class="dot"></span> FitTrack</div>
+      <nav>
+        <a href="#dashboard">Dashboard</a>
+        <a href="#bmi">BMI</a>
+        <a href="#workouts">Workouts</a>
+        <a href="#nutrition">Nutrition</a>
+        <a href="#water">Water</a>
+        <a href="#timer">HIIT Timer</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section id="dashboard" class="card">
+      <div class="row" style="align-items:center; justify-content:space-between; gap:1rem">
+        <div>
+          <h1 style="margin:.2rem 0 0">Welcome back 👋</h1>
+          <p class="muted">Track workouts, calories, water, and more — locally on your device.</p>
+        </div>
+        <button class="btn ghost" id="resetAll">Reset Data</button>
+      </div>
+      <div class="kpi" style="margin-top:1rem">
+        <div class="tile">
+          <div class="muted small">Today Calories</div>
+          <div class="value" id="kcalToday">0 kcal</div>
+          <div class="progress" style="margin-top:.5rem"><span id="kcalBar"></span></div>
+          <div class="small muted" id="kcalGoalText">Goal: 2000</div>
+        </div>
+        <div class="tile">
+          <div class="muted small">Water Intake</div>
+          <div class="value" id="waterToday">0 L</div>
+          <div class="progress" style="margin-top:.5rem"><span id="waterBar"></span></div>
+          <div class="small muted" id="waterGoalText">Goal: 2.5 L</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="grid">
+      <!-- Left column -->
+      <section id="bmi" class="card">
+        <h2>BMI Calculator</h2>
+        <div class="row">
+          <div style="flex:1">
+            <label for="height">Height (cm)</label>
+            <input id="height" type="number" placeholder="e.g., 170" min="50" max="260">
+          </div>
+          <div style="flex:1">
+            <label for="weight">Weight (kg)</label>
+            <input id="weight" type="number" placeholder="e.g., 65" min="10" max="400">
+          </div>
+        </div>
+        <div class="row" style="margin-top:.8rem">
+          <button class="btn primary" id="calcBMI">Calculate</button>
+          <button class="btn ghost" id="saveBMI">Save</button>
+        </div>
+        <p style="margin-top:.8rem"><strong>Your BMI:</strong> <span id="bmiValue">—</span> <span class="pill" id="bmiCategory"></span></p>
+        <p class="muted small">Note: BMI is a rough screening tool and does not account for muscle mass or body composition.</p>
+      </section>
+
+      <section id="workouts" class="card">
+        <h2>Workout Planner</h2>
+        <div class="row">
+          <input id="wName" placeholder="Exercise name (e.g., Squats)">
+          <input id="wSets" type="number" placeholder="Sets" min="1" style="max-width:120px">
+          <input id="wReps" type="number" placeholder="Reps" min="1" style="max-width:120px">
+          <button class="btn primary" id="addWorkout">Add</button>
+        </div>
+        <div class="list" id="workoutList" style="margin-top:1rem"></div>
+      </section>
+
+      <!-- Right column -->
+      <section id="nutrition" class="card">
+        <h2>Nutrition – Calorie Log</h2>
+        <div class="row">
+          <input id="mealName" placeholder="Food / Meal name">
+          <input id="mealKcal" type="number" placeholder="Calories (kcal)" min="0" style="max-width:160px">
+          <button class="btn primary" id="addMeal">Add</button>
+        </div>
+        <div class="row" style="margin-top:.6rem">
+          <div style="flex:1">
+            <label for="kcalGoal">Daily Calorie Goal</label>
+            <input id="kcalGoal" type="number" min="500" value="2000">
+          </div>
+          <div style="flex:1"></div>
+        </div>
+        <div class="list" id="mealList" style="margin-top:1rem"></div>
+      </section>
+
+      <section id="water" class="card">
+        <h2>Water Tracker</h2>
+        <div class="row">
+          <input id="waterAmount" type="number" placeholder="Amount (ml)" min="50" value="250" style="max-width:160px">
+          <button class="btn primary" id="addWater">Add</button>
+          <button class="btn ghost" id="undoWater">Undo</button>
+        </div>
+        <div class="row" style="margin-top:.6rem">
+          <div style="flex:1">
+            <label for="waterGoal">Daily Water Goal (ml)</label>
+            <input id="waterGoal" type="number" min="500" value="2500">
+          </div>
+          <div style="flex:1"></div>
+        </div>
+        <div id="waterLog" class="list" style="margin-top:1rem"></div>
+      </section>
+    </div>
+
+    <section id="timer" class="card">
+      <h2>HIIT / Interval Timer</h2>
+      <div class="row">
+        <div style="flex:1">
+          <label>Work (sec)</label>
+          <input id="workSec" type="number" min="5" value="30">
+        </div>
+        <div style="flex:1">
+          <label>Rest (sec)</label>
+          <input id="restSec" type="number" min="5" value="15">
+        </div>
+        <div style="flex:1">
+          <label>Rounds</label>
+          <input id="rounds" type="number" min="1" value="6">
+        </div>
+      </div>
+      <div class="row" style="align-items:center; margin-top:.8rem">
+        <button class="btn primary" id="startTimer">Start</button>
+        <button class="btn ghost" id="pauseTimer">Pause</button>
+        <button class="btn danger" id="resetTimer">Reset</button>
+        <div class="pill" id="timerState">Ready</div>
+      </div>
+      <div style="display:flex; align-items:center; gap:1rem; margin-top:1rem">
+        <div style="font-size:3rem; font-weight:800" id="timerDisplay">00:00</div>
+        <div class="muted">Round <span id="roundDisplay">0</span>/<span id="roundTotal">0</span></div>
+      </div>
+    </section>
+
+    <section class="footer small">
+      Built with ❤️ – Your data is stored locally in your browser (localStorage). Clear anytime via “Reset Data”.
+    </section>
+  </main>
+
+  <script>
+    // ===== Utilities & Storage =====
+    const $ = (id)=>document.getElementById(id);
+    const todayKey = ()=> new Date().toISOString().slice(0,10); // YYYY-MM-DD
+    const store = {
+      get(k, fallback){ try{ return JSON.parse(localStorage.getItem(k)) ?? fallback }catch{ return fallback } },
+      set(k, v){ localStorage.setItem(k, JSON.stringify(v)) },
+      del(k){ localStorage.removeItem(k) }
+    };
+
+    // ===== Dashboard KPIs =====
+    function refreshKPIs(){
+      const kcalGoal = parseInt($("kcalGoal").value||2000);
+      const waterGoal = parseInt($("waterGoal").value||2500);
+      const kcal = (store.get("kcal", {}))[todayKey()]?.reduce((a,m)=>a+(m.kcal||0),0) || 0;
+      const water = (store.get("water", {}))[todayKey()]?.reduce((a,w)=>a+(w.ml||0),0) || 0;
+      $("kcalToday").textContent = `${kcal} kcal`;
+      $("waterToday").textContent = `${(water/1000).toFixed(2)} L`;
+      $("kcalGoalText").textContent = `Goal: ${kcalGoal}`;
+      $("waterGoalText").textContent = `Goal: ${(waterGoal/1000)} L`;
+      $("kcalBar").style.width = Math.min(100, (kcal/kcalGoal*100)||0) + "%";
+      $("waterBar").style.width = Math.min(100, (water/waterGoal*100)||0) + "%";
+    }
+
+    // ===== BMI =====
+    function computeBMI(hCm, wKg){
+      const hM = hCm/100; if(!hM||!wKg) return null; const bmi = wKg/(hM*hM);
+      let cat = "";
+      if(bmi<18.5) cat = "Underweight"; else if(bmi<25) cat = "Normal"; else if(bmi<30) cat="Overweight"; else cat="Obesity";
+      return { bmi: +bmi.toFixed(1), cat };
+    }
+    $("calcBMI").addEventListener("click", ()=>{
+      const h = parseFloat($("height").value); const w = parseFloat($("weight").value);
+      const r = computeBMI(h,w); if(!r){ alert("Enter valid height & weight"); return }
+      $("bmiValue").textContent = r.bmi; $("bmiCategory").textContent = r.cat;
+    });
+    $("saveBMI").addEventListener("click", ()=>{
+      const h = parseFloat($("height").value); const w = parseFloat($("weight").value);
+      const r = computeBMI(h,w); if(!r){ alert("Calculate BMI first"); return }
+      store.set("bmi", { ...r, height:h, weight:w, date: todayKey() });
+      alert("BMI saved for today");
+    });
+
+    // ===== Workouts =====
+    function renderWorkouts(){
+      const list = store.get("workouts", []);
+      const el = $("workoutList"); el.innerHTML = "";
+      list.forEach((w, idx)=>{
+        const div = document.createElement("div"); div.className = "item";
+        const left = document.createElement("div"); left.style.flex = 1;
+        left.innerHTML = `<strong>${w.name}</strong><div class="muted small">${w.sets} × ${w.reps}</div>`;
+        const right = document.createElement("div"); right.className = "row";
+        const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = !!w.done; cb.addEventListener("change",()=>{ list[idx].done = cb.checked; store.set("workouts", list); });
+        const del = document.createElement("button"); del.className = "btn danger small"; del.textContent = "Delete"; del.addEventListener("click",()=>{ list.splice(idx,1); store.set("workouts", list); renderWorkouts(); });
+        right.append(cb, del);
+        div.append(left, right); el.append(div);
+      })
+    }
+    $("addWorkout").addEventListener("click", ()=>{
+      const name = $("wName").value.trim();
+      const sets = parseInt($("wSets").value||"0");
+      const reps = parseInt($("wReps").value||"0");
+      if(!name||!sets||!reps) return alert("Fill exercise, sets & reps");
+      const list = store.get("workouts", []);
+      list.push({ name, sets, reps, done:false }); store.set("workouts", list);
+      $("wName").value = ""; $("wSets").value = ""; $("wReps").value = "";
+      renderWorkouts();
+    });
+
+    // ===== Nutrition =====
+    function renderMeals(){
+      const data = store.get("kcal", {});
+      const list = data[todayKey()]||[];
+      const el = $("mealList"); el.innerHTML="";
+      let total = 0;
+      list.forEach((m, idx)=>{
+        total += m.kcal||0;
+        const row = document.createElement("div"); row.className="item";
+        row.innerHTML = `<div style="flex:1"><strong>${m.name}</strong><div class="muted small">${m.kcal} kcal</div></div>`;
+        const del = document.createElement("button"); del.className="btn danger small"; del.textContent="Delete"; del.addEventListener("click",()=>{
+          list.splice(idx,1); data[todayKey()] = list; store.set("kcal", data); renderMeals(); refreshKPIs();
+        });
+        row.append(del); el.append(row);
+      });
+      $("kcalToday").textContent = `${total} kcal`;
+      $("kcalBar").style.width = Math.min(100, (total/parseInt($("kcalGoal").value||2000)*100)||0) + "%";
+    }
+    $("addMeal").addEventListener("click", ()=>{
+      const name = $("mealName").value.trim();
+      const kcal = parseInt($("mealKcal").value||"0");
+      if(!name||!kcal) return alert("Enter meal name & calories");
+      const data = store.get("kcal", {});
+      const list = data[todayKey()]||[]; list.push({ name, kcal });
+      data[todayKey()] = list; store.set("kcal", data);
+      $("mealName").value=""; $("mealKcal").value=""; renderMeals(); refreshKPIs();
+    });
+    $("kcalGoal").addEventListener("input", refreshKPIs);
+
+    // ===== Water =====
+    function renderWater(){
+      const data = store.get("water", {}); const list = data[todayKey()]||[];
+      const el = $("waterLog"); el.innerHTML = "";
+      let total = 0; list.forEach((w, idx)=>{
+        total += w.ml||0;
+        const row = document.createElement("div"); row.className="item";
+        row.innerHTML = `<div style="flex:1"><strong>${w.ml} ml</strong><div class="muted small">${new Date(w.time).toLocaleTimeString()}</div></div>`;
+        const del = document.createElement("button"); del.className="btn danger small"; del.textContent="Delete"; del.addEventListener("click",()=>{
+          list.splice(idx,1); data[todayKey()] = list; store.set("water", data); renderWater(); refreshKPIs();
+        });
+        row.append(del); el.append(row);
+      });
+      $("waterToday").textContent = `${(total/1000).toFixed(2)} L`;
+      $("waterBar").style.width = Math.min(100, (total/parseInt($("waterGoal").value||2500)*100)||0) + "%";
+    }
+    $("addWater").addEventListener("click", ()=>{
+      const ml = parseInt($("waterAmount").value||"0"); if(!ml) return alert("Enter amount in ml");
+      const data = store.get("water", {}); const list = data[todayKey()]||[];
+      list.push({ ml, time: Date.now() }); data[todayKey()] = list; store.set("water", data);
+      renderWater(); refreshKPIs();
+    });
+    $("undoWater").addEventListener("click", ()=>{
+      const data = store.get("water", {}); const list = data[todayKey()]||[]; list.pop();
+      data[todayKey()] = list; store.set("water", data); renderWater(); refreshKPIs();
+    });
+    $("waterGoal").addEventListener("input", refreshKPIs);
+
+    // ===== Timer =====
+    let tInt=null, mode="idle", timeLeft=0, work=30, rest=15, rounds=6, roundNow=0;
+    function fmt(n){ n = Math.max(0, Math.floor(n)); const m = String(Math.floor(n/60)).padStart(2,'0'); const s = String(n%60).padStart(2,'0'); return `${m}:${s}` }
+    function updateTimerUI(){
+      $("timerDisplay").textContent = fmt(timeLeft);
+      $("timerState").textContent = mode === 'work' ? 'WORK' : mode === 'rest' ? 'REST' : 'Ready';
+      $("roundDisplay").textContent = roundNow; $("roundTotal").textContent = rounds;
+      document.title = `${$("timerDisplay").textContent} • FitTrack`;
+    }
+    function startPhase(newMode){ mode=newMode; timeLeft = (mode==='work'?work:rest); updateTimerUI(); }
+    function tick(){
+      if(timeLeft>0){ timeLeft--; updateTimerUI(); return }
+      if(mode==='work'){ startPhase('rest'); }
+      else if(mode==='rest'){
+        roundNow++; if(roundNow>rounds){ clearInterval(tInt); tInt=null; mode='idle'; updateTimerUI(); alert('Workout complete!'); return }
+        startPhase('work');
+      }
+    }
+    $("startTimer").addEventListener("click", ()=>{
+      work = parseInt($("workSec").value||30); rest = parseInt($("restSec").value||15); rounds = parseInt($("rounds").value||6);
+      if(tInt) clearInterval(tInt); roundNow = 1; startPhase('work');
+      tInt = setInterval(tick, 1000);
+    });
+    $("pauseTimer").addEventListener("click", ()=>{ if(!tInt) return; clearInterval(tInt); tInt=null; });
+    $("resetTimer").addEventListener("click", ()=>{ if(tInt) clearInterval(tInt); tInt=null; mode='idle'; timeLeft=0; roundNow=0; updateTimerUI(); });
+
+    // ===== Reset All =====
+    $("resetAll").addEventListener("click", ()=>{
+      if(!confirm('This will clear all local data (workouts, meals, water, BMI). Continue?')) return;
+      ["workouts","kcal","water","bmi"].forEach(k=>store.del(k));
+      renderWorkouts(); renderMeals(); renderWater(); refreshKPIs(); $("bmiValue").textContent='—'; $("bmiCategory").textContent='';
+    });
+
+    // ===== Initial Boot =====
+    (function init(){
+      // Load saved BMI to inputs (if exists)
+      const b = store.get("bmi", null); if(b){ $("height").value = b.height; $("weight").value = b.weight; $("bmiValue").textContent = b.bmi; $("bmiCategory").textContent = b.cat }
+      renderWorkouts(); renderMeals(); renderWater(); refreshKPIs(); updateTimerUI();
+    })();
+  </script>
+</body>
+</html>
