@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>PC Remote — Voice & Text (HTML)</title>
+<style>
+  :root{ --bg:#0b1220; --card:#0f1724; --accent:#06b6d4; --muted:#97a6c0; --text:#e6eef8 }
+  body{ margin:0; font-family:Inter,system-ui,Arial; background:linear-gradient(180deg,#071026,#081226); color:var(--text); padding:14px }
+  h1{ font-size:20px; margin:0 0 12px 0 }
+  .card{ background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.04); padding:12px; border-radius:12px; margin-bottom:12px }
+  label{ display:block; font-size:13px; color:var(--muted); margin-bottom:6px }
+  input, select, button, textarea { width:100%; padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.04); background:transparent; color:var(--text); font-size:15px; box-sizing:border-box }
+  .row{ display:flex; gap:8px }
+  .col{ flex:1 }
+  .btn{ background:linear-gradient(90deg,var(--accent),#60a5fa); border:0; color:#041022; font-weight:700; cursor:pointer; padding:10px 12px; border-radius:8px }
+  .btn.secondary{ background:transparent; border:1px solid rgba(255,255,255,0.06); color:var(--text); font-weight:600 }
+  pre{ background:#04102a; padding:10px; border-radius:8px; max-height:220px; overflow:auto; color:#cfeff3; margin:0; font-size:13px }
+  small{ color:var(--muted) }
+</style>
+</head>
+<body>
+  <h1>PC Remote — Voice & Text</h1>
+
+  <div class="card">
+    <label>WebSocket URL (e.g., <small>ws://192.168.1.100:8765</small>)</label>
+    <input id="wsUrl" value="ws://192.168.1.100:8765" />
+    <label style="margin-top:8px">Auth Token</label>
+    <input id="token" value="changeme123" />
+    <div style="margin-top:8px" class="row">
+      <button id="connect" class="btn col">Connect</button>
+      <button id="disconnect" class="btn secondary col">Disconnect</button>
+    </div>
+    <p id="status"><small style="color:var(--muted)">Not connected</small></p>
+  </div>
+
+  <div class="card">
+    <label>Voice input</label>
+    <div style="display:flex; gap:8px;">
+      <button id="micBtn" class="btn">🎤 Start</button>
+      <input id="voiceText" placeholder="Recognized text will appear here..." />
+      <button id="sendVoice" class="btn secondary" style="width:120px">Send</button>
+    </div>
+    <small>Best on Chrome/Edge mobile. Language: English (en-IN).</small>
+  </div>
+
+  <div class="card">
+    <label>Manual command</label>
+    <select id="action">
+      <option value="open_url">Open URL</option>
+      <option value="run">Run command</option>
+      <option value="type">Type text</option>
+      <option value="press">Press key</option>
+      <option value="hotkey">Hotkey combo</option>
+      <option value="speak">Speak (TTS)</option>
+      <option value="click">Mouse click</option>
+    </select>
+    <input id="arg" placeholder="Argument (URL, command, text, key). For hotkey use comma-separated keys like Ctrl,Shift,n" />
+    <div style="display:flex; gap:8px; margin-top:8px;">
+      <button id="sendCmd" class="btn col">Send Command</button>
+      <button id="testOpen" class="btn secondary col">Example: open google</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <label>Log</label>
+    <pre id="log">—</pre>
+  </div>
+
+<script>
+const logEl = document.getElementById('log');
+function log(...args){
+  const t = new Date().toLocaleTimeString();
+  logEl.textContent = (logEl.textContent === '—' ? '' : logEl.textContent + '\n') + t + ' • ' + args.join(' ');
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+let ws = null;
+const status = document.getElementById('status');
+
+document.getElementById('connect').onclick = () => {
+  const url = document.getElementById('wsUrl').value.trim();
+  const token = document.getElementById('token').value.trim();
+  if(!url || !token) return alert('Enter WebSocket URL and token');
+  try {
+    ws = new WebSocket(url);
+    ws.onopen = () => {
+      status.innerHTML = '<small style="color:#8ee7c3">Connected — sending auth...</small>';
+      log('Connected to', url);
+      ws.send(JSON.stringify({ token }));
+    };
+    ws.onmessage = (ev) => {
+      try { const d = JSON.parse(ev.data); log('←', JSON.stringify(d)); }
+      catch { log('←', ev.data); }
+      // show auth ok
+      try {
+        const parsed = JSON.parse(ev.data);
+        if(parsed.ok && parsed.msg === 'auth ok') status.innerHTML = '<small style="color:#8ee7c3">Authenticated</small>';
+        else if(parsed.ok === false && parsed.error) status.innerHTML = '<small style="color:#fda4af">Error: '+parsed.error+'</small>';
+      } catch(e){}
+    };
+    ws.onclose = () => { status.innerHTML = '<small style="color:var(--muted)">Disconnected</small>'; log('Disconnected'); };
+    ws.onerror = (e) => { log('WebSocket error', e); status.innerHTML = '<small style="color:#fca5a5">Socket error</small>'; };
+  } catch(err){ alert(err); }
+};
+
+document.getElementById('disconnect').onclick = () => {
+  if(ws) ws.close();
+  ws = null;
+  status.innerHTML = '<small style="color:var(--muted)">Disconnected</small>';
+};
+
+document.getElementById('sendCmd').onclick = () => {
+  if(!ws || ws.readyState !== 1) return alert('Not connected');
+  const action = document.getElementById('action').value;
+  const raw = document.getElementById('arg').value.trim();
+  let args = {};
+  if(action === 'open_url') args = { url: raw };
+  else if(action === 'run') args = { cmd: raw };
+  else if(action === 'type') args = { text: raw };
+  else if(action === 'press') args = { key: raw };
+  else if(action === 'hotkey') args = { keys: raw.split(',').map(s=>s.trim()).filter(Boolean) };
+  else if(action === 'speak') args = { text: raw };
+  else if(action === 'click') args = { x: null, y: null };
+  const msg = { action, args };
+  ws.send(JSON.stringify(msg));
+  log('→', JSON.stringify(msg));
+};
+
+document.getElementById('testOpen').onclick = () => {
+  document.getElementById('action').value = 'open_url';
+  document.getElementById('arg').value = 'https://google.com';
+};
+
+// Voice recognition
+let recognition = null;
+const micBtn = document.getElementById('micBtn');
+if(('webkitSpeechRecognition' in window) || ('SpeechRecognition' in window)){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.lang = 'en-IN';
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+  recognition.onresult = (ev) => {
+    const text = ev.results[0][0].transcript;
+    document.getElementById('voiceText').value = text;
+    log('Voice recognized:', text);
+  };
+  recognition.onend = ()=> micBtn.textContent = '🎤 Start';
+  recognition.onerror = (e)=> { log('Recognition error', e.error); micBtn.textContent = '🎤 Start'; };
+} else {
+  micBtn.disabled = true;
+  micBtn.textContent = 'No Speech API';
+}
+
+micBtn.onclick = () => {
+  if(!recognition) return;
+  try { recognition.start(); micBtn.textContent = 'Listening...'; }
+  catch(e){ log('rec start fail', e); micBtn.textContent='🎤 Start'; }
+};
+
+document.getElementById('sendVoice').onclick = () => {
+  const text = document.getElementById('voiceText').value.trim();
+  if(!text) return;
+  if(!ws || ws.readyState !== 1) return alert('Not connected');
+  const lc = text.toLowerCase();
+  // basic mapping rules
+  if(lc.startsWith('open ')){
+    const url = text.split(' ').slice(1).join(' ');
+    ws.send(JSON.stringify({ action:'open_url', args:{ url } }));
+    log('→ (voice) open_url', url);
+  } else if(lc.startsWith('run ')){
+    const cmd = text.split(' ').slice(1).join(' ');
+    ws.send(JSON.stringify({ action:'run', args:{ cmd } }));
+    log('→ (voice) run', cmd);
+  } else if(lc.includes('press ') || lc.includes('press')) {
+    // example: "press enter" -> key: enter
+    const parts = lc.split('press');
+    const key = parts[1]?.trim() || lc;
+    ws.send(JSON.stringify({ action:'press', args:{ key: key } }));
+    log('→ (voice) press', key);
+  } else {
+    // default: type the text
+    ws.send(JSON.stringify({ action:'type', args:{ text } }));
+    log('→ (voice) type', text);
+  }
+};
+</script>
+</body>
+</html>
