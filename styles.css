@@ -1,0 +1,13 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f9f9f9;
+    text-align: center;
+}
+
+.character {
+    margin: 20px;
+}
+
+.character img {
+    height: 200px;
+}
