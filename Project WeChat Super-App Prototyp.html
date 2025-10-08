@@ -1,0 +1,413 @@
+# Project: WeChat Super-App Prototype
+
+This repository contains a minimal **full-stack prototype** for a "WeChat-style" super app: a single-page React frontend + Node/Express backend (with Socket.IO for chat). It's intentionally small and modular so you can extend features (payments, bookings, e-commerce, gov services) later.
+
+---
+
+## File tree (all files included below)
+
+- README.md
+- frontend/package.json
+- frontend/tailwind.config.js
+- frontend/postcss.config.js
+- frontend/src/index.jsx
+- frontend/src/App.jsx
+- frontend/src/main.css
+- frontend/src/components/Chat.jsx
+- frontend/src/components/Payments.jsx
+- frontend/src/components/Store.jsx
+- frontend/src/components/Bookings.jsx
+- backend/package.json
+- backend/.env.example
+- backend/index.js
+- backend/chat-socket.js
+- backend/routes/auth.js (optional placeholder)
+
+---
+
+### README.md
+```
+# WeChat Super-App Prototype
+
+## Quick start
+
+### Backend
+cd backend
+npm install
+# copy .env.example to .env and edit (JWT_SECRET)
+node index.js
+
+### Frontend
+cd frontend
+npm install
+npm run dev
+
+This prototype runs frontend on http://localhost:5173 and backend on http://localhost:4000
+
+Features:
+- Auth (mock, JWT later)
+- Chat using Socket.IO (basic)
+- Mock payments endpoint (no real payment provider)
+- Simple product store (in-memory)
+- Bookings API (in-memory)
+
+Extend as needed.
+```
+
+---
+
+### frontend/package.json
+```
+{
+  "name": "wechat-superapp-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "axios": "^1.4.0",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "socket.io-client": "^4.7.2"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.0.0",
+    "tailwindcss": "^3.5.0",
+    "vite": "^5.0.0",
+    "postcss": "^8.4.0",
+    "autoprefixer": "^10.4.0"
+  }
+}
+```
+
+---
+
+### frontend/tailwind.config.js
+```
+module.exports = {
+  content: ['./index.html', './src/**/*.{js,jsx,ts,tsx}'],
+  theme: { extend: {} },
+  plugins: [],
+}
+```
+
+---
+
+### frontend/postcss.config.js
+```
+module.exports = {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+}
+```
+
+---
+
+### frontend/src/index.jsx
+```
+import React from 'react'
+import { createRoot } from 'react-dom/client'
+import App from './App'
+import './main.css'
+
+createRoot(document.getElementById('root')).render(<App />)
+```
+
+---
+
+### frontend/src/main.css
+```
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root { height: 100%; }
+```
+
+---
+
+### frontend/src/App.jsx
+```jsx
+import React, { useState } from 'react'
+import Chat from './components/Chat'
+import Payments from './components/Payments'
+import Store from './components/Store'
+import Bookings from './components/Bookings'
+
+export default function App(){
+  const [view, setView] = useState('chat')
+  return (
+    <div className="min-h-screen bg-slate-50 p-6">
+      <header className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-bold">SuperApp Prototype</h1>
+        <nav className="space-x-3">
+          <button onClick={()=>setView('chat')} className="px-3 py-1 rounded bg-white shadow">Chat</button>
+          <button onClick={()=>setView('store')} className="px-3 py-1 rounded bg-white shadow">Store</button>
+          <button onClick={()=>setView('payments')} className="px-3 py-1 rounded bg-white shadow">Payments</button>
+          <button onClick={()=>setView('bookings')} className="px-3 py-1 rounded bg-white shadow">Bookings</button>
+        </nav>
+      </header>
+
+      <main className="bg-white rounded p-6 shadow">
+        {view === 'chat' && <Chat />}
+        {view === 'store' && <Store />}
+        {view === 'payments' && <Payments />}
+        {view === 'bookings' && <Bookings />}
+      </main>
+    </div>
+  )
+}
+```
+
+---
+
+### frontend/src/components/Chat.jsx
+```jsx
+import React, { useEffect, useState, useRef } from 'react'
+import { io } from 'socket.io-client'
+
+const socket = io('http://localhost:4000')
+
+export default function Chat(){
+  const [messages, setMessages] = useState([])
+  const [text, setText] = useState('')
+  const ref = useRef()
+
+  useEffect(()=>{
+    socket.on('connect', ()=>console.log('connected'))
+    socket.on('chat-message', msg => setMessages(m=>[...m, msg]))
+    return ()=>{
+      socket.off('chat-message')
+    }
+  },[])
+
+  const send = ()=>{
+    if(!text) return
+    socket.emit('chat-message', {text, from: 'user-1', ts: Date.now()})
+    setText('')
+  }
+
+  useEffect(()=>{ ref.current?.scrollIntoView({behavior:'smooth'}) }, [messages])
+
+  return (
+    <div>
+      <div className="h-64 overflow-y-auto border p-3 rounded">
+        {messages.map((m,i)=> <div key={i} className="mb-2"><b>{m.from}:</b> {m.text}</div>)}
+        <div ref={ref}></div>
+      </div>
+      <div className="mt-3 flex">
+        <input value={text} onChange={e=>setText(e.target.value)} className="flex-1 p-2 border rounded" />
+        <button onClick={send} className="ml-2 px-4 py-2 bg-blue-600 text-white rounded">Send</button>
+      </div>
+    </div>
+  )
+}
+```
+
+---
+
+### frontend/src/components/Payments.jsx
+```jsx
+import React, {useState} from 'react'
+import axios from 'axios'
+
+export default function Payments(){
+  const [amount, setAmount] = useState(10)
+  const [status, setStatus] = useState(null)
+
+  const pay = async ()=>{
+    try{
+      const res = await axios.post('http://localhost:4000/api/payments/pay',{amount})
+      setStatus(res.data)
+    }catch(e){ setStatus({error: e.message}) }
+  }
+
+  return (
+    <div>
+      <h2 className="text-lg font-semibold">Mock Payments</h2>
+      <div className="mt-3">
+        <input type="number" value={amount} onChange={e=>setAmount(+e.target.value)} className="p-2 border rounded" />
+        <button onClick={pay} className="ml-2 px-3 py-2 bg-green-600 text-white rounded">Pay</button>
+      </div>
+      <pre className="mt-3 bg-slate-100 p-3 rounded">{JSON.stringify(status, null, 2)}</pre>
+    </div>
+  )
+}
+```
+
+---
+
+### frontend/src/components/Store.jsx
+```jsx
+import React, {useEffect, useState} from 'react'
+import axios from 'axios'
+
+export default function Store(){
+  const [products, setProducts] = useState([])
+
+  useEffect(()=>{ axios.get('http://localhost:4000/api/products').then(r=>setProducts(r.data)) },[])
+
+  return (
+    <div>
+      <h2 className="text-lg font-semibold">Mini Store</h2>
+      <div className="grid grid-cols-2 gap-4 mt-3">
+        {products.map(p=> (
+          <div key={p.id} className="p-3 border rounded">
+            <h3 className="font-bold">{p.name}</h3>
+            <p>{p.description}</p>
+            <div className="mt-2">₹{p.price}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+```
+
+---
+
+### frontend/src/components/Bookings.jsx
+```jsx
+import React, {useState} from 'react'
+import axios from 'axios'
+
+export default function Bookings(){
+  const [name, setName] = useState('')
+  const [slot, setSlot] = useState('9:00')
+  const [res, setRes] = useState(null)
+
+  const book = async ()=>{
+    const r = await axios.post('http://localhost:4000/api/bookings',{name, slot})
+    setRes(r.data)
+  }
+
+  return (
+    <div>
+      <h2 className="text-lg font-semibold">Book a Service</h2>
+      <div className="mt-3">
+        <input value={name} onChange={e=>setName(e.target.value)} placeholder="Your name" className="p-2 border rounded" />
+        <select value={slot} onChange={e=>setSlot(e.target.value)} className="ml-2 p-2 border rounded">
+          <option>9:00</option>
+          <option>11:00</option>
+          <option>14:00</option>
+        </select>
+        <button onClick={book} className="ml-2 px-3 py-2 bg-indigo-600 text-white rounded">Book</button>
+      </div>
+      <pre className="mt-3 bg-slate-100 p-3 rounded">{JSON.stringify(res, null, 2)}</pre>
+    </div>
+  )
+}
+```
+
+---
+
+### backend/package.json
+```
+{
+  "name": "wechat-superapp-backend",
+  "version": "0.1.0",
+  "main": "index.js",
+  "scripts": { "start": "node index.js" },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2",
+    "body-parser": "^1.20.2",
+    "dotenv": "^16.0.3"
+  }
+}
+```
+
+---
+
+### backend/.env.example
+```
+PORT=4000
+JWT_SECRET=change_this_secret
+```
+
+---
+
+### backend/index.js
+```
+require('dotenv').config()
+const express = require('express')
+const http = require('http')
+const cors = require('cors')
+const bodyParser = require('body-parser')
+const { setupChat } = require('./chat-socket')
+
+const app = express()
+const server = http.createServer(app)
+
+app.use(cors())
+app.use(bodyParser.json())
+
+// simple in-memory stores
+const products = [
+  {id:1, name:'Phone case', description:'Cool case', price:199},
+  {id:2, name:'Sticker pack', description:'Fun stickers', price:49}
+]
+const bookings = []
+
+app.get('/api/products', (req,res)=> res.json(products))
+
+app.post('/api/bookings', (req,res)=>{
+  const {name, slot} = req.body
+  const b = {id: bookings.length+1, name, slot, ts: Date.now()}
+  bookings.push(b)
+  res.json(b)
+})
+
+app.post('/api/payments/pay', (req,res)=>{
+  const {amount} = req.body
+  // mock payment logic
+  const receipt = {id: 'rcpt_' + Date.now(), amount, status:'success'}
+  res.json(receipt)
+})
+
+setupChat(server) // socket.io chat
+
+const PORT = process.env.PORT || 4000
+server.listen(PORT, ()=> console.log('Backend running on', PORT))
+```
+
+---
+
+### backend/chat-socket.js
+```
+const { Server } = require('socket.io')
+
+function setupChat(httpServer){
+  const io = new Server(httpServer, {cors:{origin:'*'}})
+  io.on('connection', socket =>{
+    console.log('socket connected', socket.id)
+    socket.on('chat-message', msg =>{
+      // broadcast to everyone (demo)
+      io.emit('chat-message', msg)
+    })
+    socket.on('disconnect', ()=> console.log('disconnected', socket.id))
+  })
+}
+
+module.exports = { setupChat }
+```
+
+---
+
+### backend/routes/auth.js  (OPTIONAL / mock)
+```
+// For a real app add password hashing, DB, JWT
+```
+
+---
+
+## Notes & next steps
+- This is a **prototype**: mock payments + in-memory stores. Replace with real DB (Postgres / Mongo / SQLite) and payment gateway (Stripe/Paytm) for production.
+- Add authentication (JWT), role-based access, rate-limiting, input validation, and HTTPS.
+- Extend modules into microservices as the app scales.
